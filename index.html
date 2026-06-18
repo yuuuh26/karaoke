@@ -46,7 +46,6 @@
             background-color: #fff;
             font-family: inherit;
         }
-        /* 感想用のテキストエリア */
         textarea {
             resize: vertical;
             height: 70px;
@@ -93,11 +92,27 @@
         .history-section {
             margin-top: 30px;
         }
-        .history-title {
-            font-size: 1.1rem;
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             border-bottom: 2px solid #3498db;
             padding-bottom: 5px;
             margin-bottom: 12px;
+        }
+        .history-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        /* 全削除ボタンのスタイル */
+        .clear-all-btn {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 5px;
             font-weight: bold;
         }
         ul {
@@ -112,10 +127,33 @@
             margin-bottom: 8px;
             border: 1px solid #eee;
             font-size: 0.95rem;
+            position: relative;
+        }
+        .song-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-right: 25px; /* 削除ボタンと被らないように */
         }
         .song-title {
             font-weight: bold;
             color: #2c3e50;
+        }
+        /* 個別削除ボタン（×マーク） */
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #bbb;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 2px 6px;
+            transition: color 0.2s;
+        }
+        .delete-btn:hover {
+            color: #e74c3c;
         }
         .meta-info {
             display: flex;
@@ -124,7 +162,6 @@
             font-size: 0.8rem;
             margin-top: 5px;
         }
-        /* 履歴内の感想部分のデザイン */
         .comment-display {
             background-color: #fff;
             border-left: 3px solid #bdc3c7;
@@ -133,7 +170,7 @@
             font-size: 0.85rem;
             color: #555;
             border-radius: 0 4px 4px 0;
-            white-space: pre-wrap; /* 改行をそのまま表示 */
+            white-space: pre-wrap;
         }
         .stars-display {
             color: #f1c40f;
@@ -194,7 +231,6 @@
         </div>
     </div>
 
-    <!-- ✨ 感想入力欄を追加 -->
     <div class="form-group">
         <label for="commentInput">感想・メモ（空欄でもOK）</label>
         <textarea id="commentInput" placeholder="例：サビの高音がギリギリ。次は+1で試す。"></textarea>
@@ -206,7 +242,11 @@
     </div>
 
     <div class="history-section">
-        <div class="history-title">これまでに歌った曲</div>
+        <div class="history-header">
+            <h2 class="history-title">これまでに歌った曲</h2>
+            <!-- ✨ 全削除ボタンを追加 -->
+            <button class="clear-all-btn" id="clearAllBtn">全削除</button>
+        </div>
         <ul id="historyList"></ul>
     </div>
 
@@ -220,9 +260,10 @@
     const songInput = document.getElementById('songInput');
     const keySelect = document.getElementById('keySelect');
     const starRating = document.getElementById('starRating');
-    const commentInput = document.getElementById('commentInput'); // 追加
+    const commentInput = document.getElementById('commentInput');
     const saveBtn = document.getElementById('saveBtn');
     const exportBtn = document.getElementById('exportBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn'); // 追加
     const historyList = document.getElementById('historyList');
     const artistSuggestions = document.getElementById('artistSuggestions');
     const songSuggestions = document.getElementById('songSuggestions');
@@ -255,7 +296,7 @@
         const artistName = artistInput.value.trim() || '不明';
         const songName = songInput.value.trim();
         const selectedKey = keySelect.value;
-        const commentText = commentInput.value.trim(); // 追加
+        const commentText = commentInput.value.trim();
 
         if (!songName) {
             alert('曲名を入力してください！');
@@ -266,26 +307,46 @@
         const timestamp = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
         const newRecord = {
+            id: Date.now(), // 削除する時に特定の曲を見つける用のID
             artist: artistName,
             song: songName,
             key: selectedKey,
             rating: currentRating,
-            comment: commentText, // 追加
+            comment: commentText,
             date: timestamp
         };
 
         songsHistory.unshift(newRecord);
         localStorage.setItem('myKaraokeHistory', JSON.stringify(songsHistory));
 
-        // 入力欄をリセット
         songInput.value = '';
         artistInput.value = '';
         keySelect.value = '原曲キー';
-        commentInput.value = ''; // 追加
+        commentInput.value = '';
         currentRating = 3;
         updateStars();
 
         updateDisplay();
+    });
+
+    // ✨ 個別削除の関数
+    function deleteRecord(id) {
+        if (confirm('この歌唱記録を削除してもよろしいですか？')) {
+            songsHistory = songsHistory.filter(item => item.id !== id);
+            localStorage.setItem('myKaraokeHistory', JSON.stringify(songsHistory));
+            updateDisplay();
+        }
+    }
+
+    // ✨ 全削除ボタンの処理
+    clearAllBtn.addEventListener('click', () => {
+        if (songsHistory.length === 0) return;
+        
+        if (confirm('すべての歌唱履歴を完全に削除します。よろしいですか？')) {
+            songsHistory = [];
+            localStorage.removeItem('myKaraokeHistory');
+            updateDisplay();
+        }
     });
 
     exportBtn.addEventListener('click', () => {
@@ -303,7 +364,7 @@
             textData += `   キー：${item.key}\n`;
             textData += `   満足度：${stars}\n`;
             if (item.comment) {
-                textData += `   感想：${item.comment}\n`; // 感想があれば書き出す
+                textData += `   感想：${item.comment}\n`;
             }
             textData += "--------------------\n";
         });
@@ -321,19 +382,22 @@
             const li = document.createElement('li');
             const starText = "⭐".repeat(item.rating);
             
-            // 感想がある場合だけHTML要素を作る処理
             let commentHtml = '';
             if (item.comment) {
                 commentHtml = `<div class="comment-display">💬 ${item.comment}</div>`;
             }
 
             li.innerHTML = `
-                <div class="song-title">🎵 ${item.song} / ${item.artist}</div>
+                <div class="song-title-row">
+                    <div class="song-title">🎵 ${item.song} / ${item.artist}</div>
+                </div>
                 <div class="meta-info">
                     <span>キー: ${item.key} <span class="stars-display">${starText}</span></span>
                     <span>${item.date}</span>
                 </div>
                 ${commentHtml}
+                <!-- ×ボタンを設置、クリック時にIDを渡す -->
+                <button class="delete-btn" onclick="deleteRecord(${item.id})">×</button>
             `;
             historyList.appendChild(li);
         });
