@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カラオケ記録アプリ</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f3f6;
+            color: #333;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: #fff;
+            font-family: inherit;
+        }
+        /* 感想用のテキストエリア */
+        textarea {
+            resize: vertical;
+            height: 70px;
+        }
+        .rating-container {
+            display: flex;
+            gap: 10px;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+        .star {
+            color: #ccc;
+            transition: color 0.1s;
+        }
+        .star.active {
+            color: #f1c40f;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #saveBtn {
+            background-color: #3498db;
+            color: white;
+        }
+        #saveBtn:hover { background-color: #2980b9; }
+        #exportBtn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        #exportBtn:hover { background-color: #27ae60; }
+        
+        .history-section {
+            margin-top: 30px;
+        }
+        .history-title {
+            font-size: 1.1rem;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            background: #fafafa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
+            font-size: 0.95rem;
+        }
+        .song-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .meta-info {
+            display: flex;
+            justify-content: space-between;
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        /* 履歴内の感想部分のデザイン */
+        .comment-display {
+            background-color: #fff;
+            border-left: 3px solid #bdc3c7;
+            padding: 6px 10px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #555;
+            border-radius: 0 4px 4px 0;
+            white-space: pre-wrap; /* 改行をそのまま表示 */
+        }
+        .stars-display {
+            color: #f1c40f;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.75rem;
+            color: #bdc3c7;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎤 カラオケ歌唱記録</h1>
+    
+    <div class="form-group">
+        <label for="artistInput">歌手名</label>
+        <input type="text" id="artistInput" list="artistSuggestions" placeholder="例：優里" autocomplete="off">
+        <datalist id="artistSuggestions"></datalist>
+    </div>
+
+    <div class="form-group">
+        <label for="songInput">曲名</label>
+        <input type="text" id="songInput" list="songSuggestions" placeholder="例：ドライフラワー" autocomplete="off">
+        <datalist id="songSuggestions"></datalist>
+    </div>
+    
+    <div class="form-group">
+        <label for="keySelect">歌ったキー</label>
+        <select id="keySelect">
+            <option value="原曲キー" selected>原曲キー</option>
+            <option value="+6">+6</option>
+            <option value="+5">+5</option>
+            <option value="+4">+4</option>
+            <option value="+3">+3</option>
+            <option value="+2">+2</option>
+            <option value="+1">+1</option>
+            <option value="-1">-1</option>
+            <option value="-2">-2</option>
+            <option value="-3">-3</option>
+            <option value="-4">-4</option>
+            <option value="-5">-5</option>
+            <option value="-6">-6</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>満足度（5段階）</label>
+        <div class="rating-container" id="starRating">
+            <span class="star active" data-value="1">★</span>
+            <span class="star active" data-value="2">★</span>
+            <span class="star active" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+        </div>
+    </div>
+
+    <!-- ✨ 感想入力欄を追加 -->
+    <div class="form-group">
+        <label for="commentInput">感想・メモ（空欄でもOK）</label>
+        <textarea id="commentInput" placeholder="例：サビの高音がギリギリ。次は+1で試す。"></textarea>
+    </div>
+    
+    <div class="btn-group">
+        <button id="saveBtn">曲を記録</button>
+        <button id="exportBtn">履歴をコピー</button>
+    </div>
+
+    <div class="history-section">
+        <div class="history-title">これまでに歌った曲</div>
+        <ul id="historyList"></ul>
+    </div>
+
+    <div class="footer">
+        Powered by Yuu | © 2026
+    </div>
+</div>
+
+<script>
+    const artistInput = document.getElementById('artistInput');
+    const songInput = document.getElementById('songInput');
+    const keySelect = document.getElementById('keySelect');
+    const starRating = document.getElementById('starRating');
+    const commentInput = document.getElementById('commentInput'); // 追加
+    const saveBtn = document.getElementById('saveBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const historyList = document.getElementById('historyList');
+    const artistSuggestions = document.getElementById('artistSuggestions');
+    const songSuggestions = document.getElementById('songSuggestions');
+
+    let currentRating = 3;
+    let songsHistory = JSON.parse(localStorage.getItem('myKaraokeHistory')) || [];
+
+    starRating.addEventListener('click', (e) => {
+        if (e.target.classList.contains('star')) {
+            currentRating = parseInt(e.target.getAttribute('data-value'));
+            updateStars();
+        }
+    });
+
+    function updateStars() {
+        const stars = starRating.querySelectorAll('.star');
+        stars.forEach(star => {
+            const value = parseInt(star.getAttribute('data-value'));
+            if (value <= currentRating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+
+    updateDisplay();
+
+    saveBtn.addEventListener('click', () => {
+        const artistName = artistInput.value.trim() || '不明';
+        const songName = songInput.value.trim();
+        const selectedKey = keySelect.value;
+        const commentText = commentInput.value.trim(); // 追加
+
+        if (!songName) {
+            alert('曲名を入力してください！');
+            return;
+        }
+
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const newRecord = {
+            artist: artistName,
+            song: songName,
+            key: selectedKey,
+            rating: currentRating,
+            comment: commentText, // 追加
+            date: timestamp
+        };
+
+        songsHistory.unshift(newRecord);
+        localStorage.setItem('myKaraokeHistory', JSON.stringify(songsHistory));
+
+        // 入力欄をリセット
+        songInput.value = '';
+        artistInput.value = '';
+        keySelect.value = '原曲キー';
+        commentInput.value = ''; // 追加
+        currentRating = 3;
+        updateStars();
+
+        updateDisplay();
+    });
+
+    exportBtn.addEventListener('click', () => {
+        if (songsHistory.length === 0) {
+            alert('まだ記録された曲がありません。');
+            return;
+        }
+
+        let textData = "【カラオケ歌唱記録リスト】\n\n";
+        songsHistory.forEach((item, index) => {
+            const stars = "⭐".repeat(item.rating);
+            textData += `${index + 1}. ${item.date}\n`;
+            textData += `   曲名：${item.song}\n`;
+            textData += `   歌手：${item.artist}\n`;
+            textData += `   キー：${item.key}\n`;
+            textData += `   満足度：${stars}\n`;
+            if (item.comment) {
+                textData += `   感想：${item.comment}\n`; // 感想があれば書き出す
+            }
+            textData += "--------------------\n";
+        });
+
+        navigator.clipboard.writeText(textData).then(() => {
+            alert('全履歴をクリップボードにコピーしました！Google KeepやAIにそのまま貼り付けられます。📋✨');
+        }).catch(err => {
+            alert('コピーに失敗しました：', err);
+        });
+    });
+
+    function updateDisplay() {
+        historyList.innerHTML = '';
+        songsHistory.forEach(item => {
+            const li = document.createElement('li');
+            const starText = "⭐".repeat(item.rating);
+            
+            // 感想がある場合だけHTML要素を作る処理
+            let commentHtml = '';
+            if (item.comment) {
+                commentHtml = `<div class="comment-display">💬 ${item.comment}</div>`;
+            }
+
+            li.innerHTML = `
+                <div class="song-title">🎵 ${item.song} / ${item.artist}</div>
+                <div class="meta-info">
+                    <span>キー: ${item.key} <span class="stars-display">${starText}</span></span>
+                    <span>${item.date}</span>
+                </div>
+                ${commentHtml}
+            `;
+            historyList.appendChild(li);
+        });
+
+        const uniqueArtists = [...new Set(songsHistory.map(item => item.artist))].filter(a => a !== '不明');
+        const uniqueSongs = [...new Set(songsHistory.map(item => item.song))];
+
+        artistSuggestions.innerHTML = '';
+        uniqueArtists.forEach(artist => {
+            const option = document.createElement('option');
+            option.value = artist;
+            artistSuggestions.appendChild(option);
+        });
+
+        songSuggestions.innerHTML = '';
+        uniqueSongs.forEach(song => {
+            const option = document.createElement('option');
+            option.value = song;
+            songSuggestions.appendChild(option);
+        });
+    }
+</script>
+
+</body>
+</html>
